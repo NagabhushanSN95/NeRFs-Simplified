@@ -1,5 +1,7 @@
 # NeRFs-Simplified
-Simplified code for NeRF and integrated with different NeRF models. Code for different NeRF models available under a unified structure.
+Simplified code for NeRF and integrated with different NeRF models. 
+Code for different NeRF models available under a unified structure.
+Additionally, loss maps are visualized during validation.
 
 
 ## Currently supported NeRF models
