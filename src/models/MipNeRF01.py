@@ -1,12 +1,13 @@
 # Shree KRISHNAya Namaha
 # Extended from NeRF01.py for MipNeRF
 # Author: Nagabhushan S N
-# Last Modified: 23/09/2022
+# Last Modified: 05/12/2022
 
 import math
 
 import torch
 import torch.nn.functional as F
+
 from utils import CommonUtils01 as CommonUtils
 
 
@@ -50,8 +51,8 @@ class MipNeRF(torch.nn.Module):
 
         return return_dict
 
-    def forward(self, input_batch: dict):
-        render_output_dict = self.render(input_batch, retraw=self.training)
+    def forward(self, input_batch: dict, retraw: bool = False):
+        render_output_dict = self.render(input_batch, retraw=self.training or retraw)
         return render_output_dict
 
     def render(self, input_dict: dict, retraw: bool = False):
@@ -469,10 +470,10 @@ class MipNeRF(torch.nn.Module):
                         network_output_chunks[k].append(network_output_chunk[k])
                     elif isinstance(network_output_chunk[k], list) and isinstance(network_output_chunk[k][0], torch.Tensor):
                         if len(network_output_chunks[k]) == 0:
-                            for i in range(len(network_output_chunk[k])):
+                            for j in range(len(network_output_chunk[k])):
                                 network_output_chunks[k].append([])
-                        for i in range(len(network_output_chunk[k])):
-                            network_output_chunks[k][i].append(network_output_chunk[k][i])
+                        for j in range(len(network_output_chunk[k])):
+                            network_output_chunks[k][j].append(network_output_chunk[k][j])
                     else:
                         raise RuntimeError
 
@@ -480,8 +481,8 @@ class MipNeRF(torch.nn.Module):
                 if isinstance(network_output_chunks[k][0], torch.Tensor):
                     network_output_chunks[k] = torch.cat(network_output_chunks[k], dim=0)
                 elif isinstance(network_output_chunks[k][0], list) and isinstance(network_output_chunks[k][0][0], torch.Tensor):
-                    for i in range(len(network_output_chunks[k])):
-                        network_output_chunks[k][i] = torch.cat(network_output_chunks[k][i], dim=0)
+                    for j in range(len(network_output_chunks[k])):
+                        network_output_chunks[k][j] = torch.cat(network_output_chunks[k][j], dim=0)
                 else:
                     raise NotImplementedError
             return network_output_chunks
