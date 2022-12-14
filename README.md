@@ -14,7 +14,7 @@ Additionally, loss maps are visualized during validation.
 If you use this in your work, please cite this github repository as well as the corresponding original papers/implementations.
 
 ```bibtex
-@misc{somraj2022dpg,
+@misc{somraj2022nerf,
     title = {{NeRFs} Simplified},
     author = {Somraj, Nagabhushan},
     year = {2022},
