@@ -27,6 +27,8 @@ def read_image(path: Path):
 
 
 def save_video(path: Path, video: numpy.ndarray):
+    if path.exists():
+        return
     try:
         skvideo.io.vwrite(path.as_posix(), video,
                           inputdict={'-r': str(15)},
@@ -558,11 +560,189 @@ def demo4():
     return
 
 
+def demo5():
+    train_num = 15
+    test_num = 15
+
+    train_configs = {
+        'trainer': f'{this_filename}/{Trainer.this_filename}',
+        'train_num': train_num,
+        'database': 'NeRF_LLFF',
+        'database_dirpath': 'Databases/NeRF_LLFF/Data',
+        'data_loader': {
+            'data_loader_name': 'NerfLlffDataLoader01',
+            'data_preprocessor_name': 'NeRFDataPreprocessor01',
+            'train_set_num': 6,
+            'scene_ids': ['fern', 'flower', 'fortress', 'horns', 'leaves', 'orchids', 'room', 'trex'],
+            # 'scene_ids': ['room', ],
+            'resolution_suffix': '_down4',
+            'recenter_camera_poses': True,
+            'bd_factor': 0.75,
+            'spherify': False,
+            'ndc': True,
+            'batching': True,
+            'downsampling_factor': 1,
+            'num_rays': 1024,
+            'precrop_fraction': 1,
+            'precrop_iterations': -1,
+        },
+        'model': {
+            'name': 'NeRF01',
+            'use_coarse_mlp': True,
+            'use_fine_mlp': True,
+            'num_samples_coarse': 64,
+            'num_samples_fine': 128,
+            'chunk': 4*1024,
+            'lindisp': False,
+            'points_positional_encoding_degree': 10,
+            'views_positional_encoding_degree': 4,
+            'netchunk': 16*1024,
+            'netdepth_coarse': 8,
+            'netdepth_fine': 8,
+            'netwidth_coarse': 256,
+            'netwidth_fine': 256,
+            'perturb': True,
+            'raw_noise_std': 1.0,
+            'use_view_dirs': True,
+            'view_dependent_rgb': True,
+            'white_bkgd': False,
+        },
+        'losses': [
+            {
+                'name': 'NeRF_MSE01',
+                'weight': 1,
+            },
+        ],
+        'optimizer': {
+            'lr_decayer_name': 'NeRFLearningRateDecayer01',
+            'lr_initial': 0.0005,
+            'lr_decay': 250,
+            'beta1': 0.9,
+            'beta2': 0.999,
+        },
+        'resume_training': True,
+        'num_iterations': 50000,
+        'validation_interval': 10000,
+        'validation_chunk_size': 64 * 1024,
+        'validation_save_loss_maps': False,
+        # 'num_validation_iterations': 10,
+        # 'sample_save_interval': 10000,
+        'model_save_interval': 25000,
+        'mixed_precision_training': False,
+        'seed': numpy.random.randint(1000),
+        'device': 'gpu0',
+    }
+    test_configs = {
+        'Tester': f'{this_filename}/{Tester.this_filename}',
+        'test_num': test_num,
+        'test_set_num': 6,
+        'train_num': train_num,
+        'model_name': 'Model_Iter050000.tar',
+        'database_name': 'NeRF_LLFF',
+        'database_dirpath': 'NeRF_LLFF/Data',
+        'device': 'gpu0',
+    }
+    start_training(train_configs)
+    start_testing(test_configs)
+    start_testing_videos(test_configs)
+    start_testing_static_videos(test_configs)
+    return
+
+
+def demo6():
+    train_num = 16
+    test_num = 16
+
+    train_configs = {
+        'trainer': f'{this_filename}/{Trainer.this_filename}',
+        'train_num': train_num,
+        'database': 'NeRF_LLFF',
+        'database_dirpath': 'Databases/NeRF_LLFF/Data',
+        'data_loader': {
+            'data_loader_name': 'NerfLlffDataLoader01',
+            'data_preprocessor_name': 'NeRFDataPreprocessor01',
+            'train_set_num': 3,
+            'scene_ids': ['fern', 'flower', 'fortress', 'horns', 'leaves', 'orchids', 'room', 'trex'],
+            # 'scene_ids': ['room', ],
+            'resolution_suffix': '_down4',
+            'recenter_camera_poses': True,
+            'bd_factor': 0.75,
+            'spherify': False,
+            'ndc': False,
+            'batching': True,
+            'downsampling_factor': 1,
+            'num_rays': 1024,
+            'precrop_fraction': 1,
+            'precrop_iterations': -1,
+        },
+        'model': {
+            'name': 'NeRF01',
+            'use_coarse_mlp': True,
+            'use_fine_mlp': True,
+            'num_samples_coarse': 64,
+            'num_samples_fine': 128,
+            'chunk': 4*1024,
+            'lindisp': False,
+            'points_positional_encoding_degree': 10,
+            'views_positional_encoding_degree': 4,
+            'netchunk': 16*1024,
+            'netdepth_coarse': 8,
+            'netdepth_fine': 8,
+            'netwidth_coarse': 256,
+            'netwidth_fine': 256,
+            'perturb': True,
+            'raw_noise_std': 1.0,
+            'use_view_dirs': True,
+            'view_dependent_rgb': True,
+            'white_bkgd': False,
+        },
+        'losses': [
+            {
+                'name': 'NeRF_MSE01',
+                'weight': 1,
+            },
+        ],
+        'optimizer': {
+            'lr_decayer_name': 'NeRFLearningRateDecayer01',
+            'lr_initial': 0.0005,
+            'lr_decay': 250,
+            'beta1': 0.9,
+            'beta2': 0.999,
+        },
+        'resume_training': True,
+        'num_iterations': 300000,
+        'validation_interval': 500000,
+        'num_validation_iterations': 10,
+        'sample_save_interval': 500000,
+        'model_save_interval': 25000,
+        'mixed_precision_training': False,
+        'seed': numpy.random.randint(1000),
+        'device': 'gpu0',
+    }
+    test_configs = {
+        'Tester': f'{this_filename}/{Tester.this_filename}',
+        'test_num': test_num,
+        'test_set_num': 3,
+        'train_num': train_num,
+        'model_name': 'Model_Iter300000.tar',
+        'database_name': 'NeRF_LLFF',
+        'database_dirpath': 'NeRF_LLFF/Data',
+        'device': 'gpu0',
+    }
+    start_training(train_configs)
+    start_testing(test_configs)
+    start_testing_videos(test_configs)
+    start_testing_static_videos(test_configs)
+    return
+
+
 def main():
     demo1()
     demo2()
     demo3()
     demo4()
+    demo5()
+    demo6()
     return
 
 

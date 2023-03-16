@@ -1,5 +1,6 @@
 # Shree KRISHNAYa Namaha
 # Loads DTU Data for NeRF
+# Extended from DtuDataLoader01.py. Complete intrinsic matrices are loaded instead of focal length.
 # Author: Nagabhushan S N
 # Last Modified: 06/01/2023
 

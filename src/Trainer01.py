@@ -201,13 +201,14 @@ class Trainer:
                             self.save_numpy_array(depth_var_ndc_output_path, post_process_output_(output_batch[f'depth_var_ndc_{mode}'], resolution), as_png=True)
 
                     # Save all loss maps
-                    for loss_name in frame_losses_dict.keys():
-                        if not isinstance(frame_losses_dict[loss_name], dict):
-                            continue
-                        loss_maps = frame_losses_dict[loss_name]['loss_maps']
-                        for loss_fullname, loss_map in loss_maps.items():
-                            loss_output_path = save_dirpath / f'Losses/{loss_fullname}_{frame_num:04}_Iter{iter_num + 1:05}.npy'
-                            self.save_numpy_array(loss_output_path, post_process_output_(loss_map, resolution), as_png=True)
+                    if self.configs['validation_save_loss_maps']:
+                        for loss_name in frame_losses_dict.keys():
+                            if not isinstance(frame_losses_dict[loss_name], dict):
+                                continue
+                            loss_maps = frame_losses_dict[loss_name]['loss_maps']
+                            for loss_fullname, loss_map in loss_maps.items():
+                                loss_output_path = save_dirpath / f'Losses/{loss_fullname}_{frame_num:04}_Iter{iter_num + 1:05}.npy'
+                                self.save_numpy_array(loss_output_path, post_process_output_(loss_map, resolution), as_png=True)
         for loss_name in total_losses_dict.keys():
             total_losses_dict[loss_name] = total_losses_dict[loss_name] / total_num_samples
         self.model.train()

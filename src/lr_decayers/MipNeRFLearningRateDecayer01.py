@@ -6,6 +6,7 @@
 from pathlib import Path
 
 import numpy
+
 from lr_decayers.LearningRateDecayerParent import LearningRateDecayerParent
 
 this_filepath = Path(__file__)

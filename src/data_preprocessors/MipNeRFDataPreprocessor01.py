@@ -9,6 +9,7 @@ import numpy
 import skimage.io
 import skimage.transform
 import torch
+
 from data_preprocessors.DataPreprocessorParent import DataPreprocessorParent
 from utils import CommonUtils01 as CommonUtils
 
@@ -500,9 +501,11 @@ class MipNeRFDataPreprocessor(DataPreprocessorParent):
                 if ('bd_factor' in input_dict) and (input_dict['bd_factor'] is not None):
                     bd_factor = input_dict['bd_factor']
                     sc = 1./(float(bds[0]) * bd_factor)
-                    poses[:, :3, 3] *= sc
-                    bds *= sc
-                    return_dict['sc'] = sc
+                else:
+                    sc = 1
+                poses[:, :3, 3] *= sc
+                bds *= sc
+                return_dict['sc'] = sc
                 return_dict['bounds'] = bds
             if self.configs['data_loader']['recenter_camera_poses']:
                 avg_pose = self.compute_average_pose(poses)
@@ -519,6 +522,7 @@ class MipNeRFDataPreprocessor(DataPreprocessorParent):
             avg_pose = input_dict['average_pose']
 
         poses = self.recenter_poses(poses, avg_pose)
+        poses = self.convert_pose_to_standard_coordinates(poses)
 
         if self.configs['data_loader']['spherify']:
             poses, render_poses, bds = self.spherify_poses(poses, return_dict['bounds'])
@@ -528,15 +532,17 @@ class MipNeRFDataPreprocessor(DataPreprocessorParent):
         return_dict['poses'] = poses
         return return_dict
 
-    def recenter_poses(self, poses, avg_pose):
+    @staticmethod
+    def recenter_poses(poses, avg_pose):
         centered_poses = avg_pose[None] @ numpy.linalg.inv(poses)
+        return centered_poses
 
+    def convert_pose_to_standard_coordinates(self, poses):
         # Convert from Colmap/RE10K convention to NeRF convention: (x,-y,-z) to (x,y,z)
         perm_matrix = numpy.eye(3)
         perm_matrix[1, 1] = -1
         perm_matrix[2, 2] = -1
-        std_poses = self.change_coordinate_system(centered_poses, perm_matrix)
-
+        std_poses = self.change_coordinate_system(poses, perm_matrix)
         return std_poses
 
     @staticmethod

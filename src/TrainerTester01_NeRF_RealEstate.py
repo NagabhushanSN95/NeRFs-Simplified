@@ -27,6 +27,8 @@ def read_image(path: Path):
 
 
 def save_video(path: Path, video: numpy.ndarray):
+    if path.exists():
+        return
     try:
         skvideo.io.vwrite(path.as_posix(), video,
                           inputdict={'-r': str(15)},

@@ -1,7 +1,7 @@
 # Shree KRISHNAya Namaha
-# Modified from TrainerTester01_NeRF_NerfLlff.py.
+# Modified from TrainerTester01_NeRF_RealEstate.py.
 # Author: Nagabhushan S N
-# Last Modified: 23/09/2022
+# Last Modified: 26/09/2022
 
 import datetime
 import os
@@ -85,7 +85,7 @@ def start_testing(test_configs: dict):
             'frames_data': {}
         }
 
-        extrinsics_path = database_dirpath / f'test/DatabaseData/{scene_id}/CameraExtrinsics.csv'
+        extrinsics_path = database_dirpath / f'all/DatabaseData/{scene_id}/CameraExtrinsics.csv'
         extrinsics = numpy.loadtxt(extrinsics_path.as_posix(), delimiter=',').reshape((-1, 4, 4))
 
         frame_nums = test_video_data.loc[test_video_data['scene_num'] == scene_num]['pred_frame_num'].to_list() + \
@@ -98,7 +98,7 @@ def start_testing(test_configs: dict):
     Tester.start_testing(test_configs, scenes_data, save_depth=True, save_depth_var=True)
 
     # Run QA
-    qa_filepath = Path('../../../../QA/00_Common/src/AllMetrics02_RealEstate.py')
+    qa_filepath = Path('../../../../QA/00_Common/src/AllMetrics05_DTU.py')
     cmd = f'python {qa_filepath.absolute().as_posix()} ' \
           f'--demo_function_name demo2 ' \
           f'--pred_videos_dirpath {output_dirpath.absolute().as_posix()} ' \
@@ -139,6 +139,8 @@ def start_testing_videos(test_configs: dict):
             }
 
             extrinsics_path = database_dirpath / f'TrainTestSets/Set{set_num:02}/VideoPoses{video_num:02}/{scene_id}.csv'
+            if not extrinsics_path.exists():
+                continue
             extrinsics = numpy.loadtxt(extrinsics_path.as_posix(), delimiter=',').reshape((-1, 4, 4))
 
             frame_nums = numpy.arange(extrinsics.shape[0] - 1)
@@ -195,6 +197,8 @@ def start_testing_static_videos(test_configs: dict):
             }
 
             extrinsics_path = database_dirpath / f'TrainTestSets/Set{set_num:02}/VideoPoses{video_num:02}/{scene_id}.csv'
+            if not extrinsics_path.exists():
+                continue
             extrinsics = numpy.loadtxt(extrinsics_path.as_posix(), delimiter=',').reshape((-1, 4, 4))
 
             frame_nums = numpy.arange(extrinsics.shape[0] - 1)
@@ -218,65 +222,60 @@ def start_testing_static_videos(test_configs: dict):
 
 
 def demo1():
-    train_num = 101
-    test_num = 101
+    train_num = 41
+    test_num = 41
 
     train_configs = {
         'trainer': f'{this_filename}/{Trainer.this_filename}',
         'train_num': train_num,
-        'database': 'RealEstate10K',
-        'database_dirpath': 'Databases/RealEstate10K/Data',
+        'database': 'DTU',
+        'database_dirpath': 'Databases/DTU/Data',
         'data_loader': {
-            'data_loader_name': 'RealEstateDataLoader01',
-            'data_preprocessor_name': 'MipNeRFDataPreprocessor01',
-            'train_set_num': 11,
-            'scene_nums': [0, 1, 3, 4, 6],
-            'recenter_camera_poses': True,
-            'bd_factor': 0.75,
+            'data_loader_name': 'DtuDataLoader01',
+            'data_preprocessor_name': 'NeRFDataPreprocessor01',
+            'train_set_num': 1,
+            'scene_nums': [8, ],
+            'recenter_camera_poses': False,
+            'bd_factor': None,
             'spherify': False,
-            'ndc': True,
+            'ndc': False,
             'batching': True,
+            'downsampling_factor': 1,
             'num_rays': 1024,
             'precrop_fraction': 1,
             'precrop_iterations': -1,
         },
         'model': {
-            'name': 'MipNeRF01',
-            'num_samples_coarse': 128,
+            'name': 'NeRF01',
+            'use_coarse_mlp': True,
+            'use_fine_mlp': True,
+            'num_samples_coarse': 64,
             'num_samples_fine': 128,
-            'stop_grad': True,
-            'ray_shape': 'cylinder',
-            'resample_padding': 0.01,
             'chunk': 4*1024,
             'lindisp': False,
-            'points_positional_encoding_degree': 16,
+            'points_positional_encoding_degree': 10,
             'views_positional_encoding_degree': 4,
-            'disable_integration': False,
             'netchunk': 16*1024,
-            'netdepth': 8,
-            'netwidth': 256,
+            'netdepth_coarse': 8,
+            'netdepth_fine': 8,
+            'netwidth_coarse': 256,
+            'netwidth_fine': 256,
             'perturb': True,
             'raw_noise_std': 1.0,
-            'sigma_bias': -1,
             'use_view_dirs': True,
             'view_dependent_rgb': True,
-            'rgb_padding': 0.001,
             'white_bkgd': False,
         },
         'losses': [
             {
-                'name': 'MipNeRF_MSE01',
+                'name': 'NeRF_MSE01',
                 'weight': 1,
-                'weight_coarse': 0.1,
-                'weight_fine': 1,
             },
         ],
         'optimizer': {
-            'lr_decayer_name': 'MipNeRFLearningRateDecayer01',
-            'lr_initial': 5e-4,
-            'lr_final': 5e-6,
-            'lr_decay_steps': 2500,
-            'lr_decay_mult': 0.01,
+            'lr_decayer_name': 'NeRFLearningRateDecayer01',
+            'lr_initial': 0.0005,
+            'lr_decay': 250,
             'beta1': 0.9,
             'beta2': 0.999,
         },
@@ -293,80 +292,75 @@ def demo1():
     test_configs = {
         'Tester': f'{this_filename}/{Tester.this_filename}',
         'test_num': test_num,
-        'test_set_num': 11,
+        'test_set_num': 1,
         'train_num': train_num,
         'model_name': 'Model_Iter300000.tar',
-        'database_name': 'RealEstate10K',
-        'database_dirpath': 'RealEstate10K/Data',
+        'database_name': 'DTU',
+        'database_dirpath': 'DTU/Data',
         'device': 'gpu0',
     }
     start_training(train_configs)
     start_testing(test_configs)
-    # start_testing_videos(test_configs)
-    # start_testing_static_videos(test_configs)
+    start_testing_videos(test_configs)
+    start_testing_static_videos(test_configs)
     return
 
 
 def demo2():
-    train_num = 102
-    test_num = 102
+    train_num = 42
+    test_num = 42
 
     train_configs = {
         'trainer': f'{this_filename}/{Trainer.this_filename}',
         'train_num': train_num,
-        'database': 'RealEstate10K',
-        'database_dirpath': 'Databases/RealEstate10K/Data',
+        'database': 'DTU',
+        'database_dirpath': 'Databases/DTU/Data',
         'data_loader': {
-            'data_loader_name': 'RealEstateDataLoader01',
-            'data_preprocessor_name': 'MipNeRFDataPreprocessor01',
-            'train_set_num': 12,
-            'scene_nums': [0, 1, 3, 4, 6],
-            'recenter_camera_poses': True,
-            'bd_factor': 0.75,
+            'data_loader_name': 'DtuDataLoader01',
+            'data_preprocessor_name': 'NeRFDataPreprocessor01',
+            'train_set_num': 2,
+            'scene_nums': [8, ],
+            'recenter_camera_poses': False,
+            'bd_factor': None,
             'spherify': False,
-            'ndc': True,
+            'ndc': False,
             'batching': True,
+            'downsampling_factor': 1,
             'num_rays': 1024,
             'precrop_fraction': 1,
             'precrop_iterations': -1,
         },
         'model': {
-            'name': 'MipNeRF01',
-            'num_samples_coarse': 128,
+            'name': 'NeRF01',
+            'use_coarse_mlp': True,
+            'use_fine_mlp': True,
+            'num_samples_coarse': 64,
             'num_samples_fine': 128,
-            'stop_grad': True,
-            'ray_shape': 'cylinder',
-            'resample_padding': 0.01,
             'chunk': 4*1024,
             'lindisp': False,
-            'points_positional_encoding_degree': 16,
+            'points_positional_encoding_degree': 10,
             'views_positional_encoding_degree': 4,
-            'disable_integration': False,
             'netchunk': 16*1024,
-            'netdepth': 8,
-            'netwidth': 256,
+            'netdepth_coarse': 8,
+            'netdepth_fine': 8,
+            'netwidth_coarse': 256,
+            'netwidth_fine': 256,
             'perturb': True,
             'raw_noise_std': 1.0,
-            'sigma_bias': -1,
             'use_view_dirs': True,
             'view_dependent_rgb': True,
-            'rgb_padding': 0.001,
             'white_bkgd': False,
         },
         'losses': [
             {
-                'name': 'MipNeRF_MSE01',
+                'name': 'NeRF_MSE01',
                 'weight': 1,
-                'weight_coarse': 0.1,
-                'weight_fine': 1,
             },
         ],
         'optimizer': {
-            'lr_decayer_name': 'MipNeRFLearningRateDecayer01',
-            'lr_initial': 5e-4,
-            'lr_final': 5e-6,
-            'lr_decay_steps': 2500,
-            'lr_decay_mult': 0.01,
+            'lr_decayer_name': 'NeRFLearningRateDecayer01',
+            'lr_initial': 0.0005,
+            'lr_decay': 250,
             'beta1': 0.9,
             'beta2': 0.999,
         },
@@ -383,80 +377,74 @@ def demo2():
     test_configs = {
         'Tester': f'{this_filename}/{Tester.this_filename}',
         'test_num': test_num,
-        'test_set_num': 12,
+        'test_set_num': 2,
         'train_num': train_num,
         'model_name': 'Model_Iter050000.tar',
-        'database_name': 'RealEstate10K',
-        'database_dirpath': 'RealEstate10K/Data',
+        'database_name': 'DTU',
+        'database_dirpath': 'DTU/Data',
         'device': 'gpu0',
     }
     start_training(train_configs)
     start_testing(test_configs)
-    # start_testing_videos(test_configs)
-    # start_testing_static_videos(test_configs)
+    start_testing_videos(test_configs)
+    start_testing_static_videos(test_configs)
     return
 
 
 def demo3():
-    train_num = 103
-    test_num = 103
+    train_num = 43
+    test_num = 43
 
     train_configs = {
         'trainer': f'{this_filename}/{Trainer.this_filename}',
         'train_num': train_num,
-        'database': 'RealEstate10K',
-        'database_dirpath': 'Databases/RealEstate10K/Data',
+        'database': 'DTU',
+        'database_dirpath': 'Databases/DTU/Data',
         'data_loader': {
-            'data_loader_name': 'RealEstateDataLoader01',
-            'data_preprocessor_name': 'MipNeRFDataPreprocessor01',
-            'train_set_num': 13,
-            'scene_nums': [0, 1, 3, 4, 6],
-            'recenter_camera_poses': True,
-            'bd_factor': 0.75,
+            'data_loader_name': 'DtuDataLoader01',
+            'data_preprocessor_name': 'NeRFDataPreprocessor01',
+            'train_set_num': 3,
+            'scene_nums': [8, ],
+            'recenter_camera_poses': False,
+            'bd_factor': None,
             'spherify': False,
-            'ndc': True,
+            'ndc': False,
             'batching': True,
             'num_rays': 1024,
             'precrop_fraction': 1,
             'precrop_iterations': -1,
         },
         'model': {
-            'name': 'MipNeRF01',
-            'num_samples_coarse': 128,
+            'name': 'NeRF01',
+            'use_coarse_mlp': True,
+            'use_fine_mlp': True,
+            'num_samples_coarse': 64,
             'num_samples_fine': 128,
-            'stop_grad': True,
-            'ray_shape': 'cylinder',
-            'resample_padding': 0.01,
             'chunk': 4*1024,
             'lindisp': False,
-            'points_positional_encoding_degree': 16,
+            'points_positional_encoding_degree': 10,
             'views_positional_encoding_degree': 4,
-            'disable_integration': False,
             'netchunk': 16*1024,
-            'netdepth': 8,
-            'netwidth': 256,
+            'netdepth_coarse': 8,
+            'netdepth_fine': 8,
+            'netwidth_coarse': 256,
+            'netwidth_fine': 256,
             'perturb': True,
             'raw_noise_std': 1.0,
-            'sigma_bias': -1,
             'use_view_dirs': True,
             'view_dependent_rgb': True,
-            'rgb_padding': 0.001,
             'white_bkgd': False,
         },
         'losses': [
             {
-                'name': 'MipNeRF_MSE01',
+                'name': 'NeRF_MSE01',
                 'weight': 1,
-                'weight_coarse': 0.1,
-                'weight_fine': 1,
             },
         ],
         'optimizer': {
-            'lr_decayer_name': 'MipNeRFLearningRateDecayer01',
-            'lr_initial': 5e-4,
-            'lr_final': 5e-6,
-            'lr_decay_steps': 2500,
-            'lr_decay_mult': 0.01,
+            'lr_decayer_name': 'NeRFLearningRateDecayer01',
+            'lr_initial': 0.0005,
+            'lr_decay': 250,
             'beta1': 0.9,
             'beta2': 0.999,
         },
@@ -473,80 +461,74 @@ def demo3():
     test_configs = {
         'Tester': f'{this_filename}/{Tester.this_filename}',
         'test_num': test_num,
-        'test_set_num': 13,
+        'test_set_num': 3,
         'train_num': train_num,
         'model_name': 'Model_Iter050000.tar',
-        'database_name': 'RealEstate10K',
-        'database_dirpath': 'RealEstate10K/Data',
+        'database_name': 'DTU',
+        'database_dirpath': 'DTU/Data',
         'device': 'gpu0',
     }
     start_training(train_configs)
     start_testing(test_configs)
-    # start_testing_videos(test_configs)
-    # start_testing_static_videos(test_configs)
+    start_testing_videos(test_configs)
+    start_testing_static_videos(test_configs)
     return
 
 
 def demo4():
-    train_num = 104
-    test_num = 104
+    train_num = 44
+    test_num = 44
 
     train_configs = {
         'trainer': f'{this_filename}/{Trainer.this_filename}',
         'train_num': train_num,
-        'database': 'RealEstate10K',
-        'database_dirpath': 'Databases/RealEstate10K/Data',
+        'database': 'DTU',
+        'database_dirpath': 'Databases/DTU/Data',
         'data_loader': {
-            'data_loader_name': 'RealEstateDataLoader01',
-            'data_preprocessor_name': 'MipNeRFDataPreprocessor01',
-            'train_set_num': 14,
-            'scene_nums': [0, 1, 3, 4, 6],
-            'recenter_camera_poses': True,
-            'bd_factor': 0.75,
+            'data_loader_name': 'DtuDataLoader01',
+            'data_preprocessor_name': 'NeRFDataPreprocessor01',
+            'train_set_num': 4,
+            'scene_nums': [8, ],
+            'recenter_camera_poses': False,
+            'bd_factor': None,
             'spherify': False,
-            'ndc': True,
+            'ndc': False,
             'batching': True,
             'num_rays': 1024,
             'precrop_fraction': 1,
             'precrop_iterations': -1,
         },
         'model': {
-            'name': 'MipNeRF01',
-            'num_samples_coarse': 128,
+            'name': 'NeRF01',
+            'use_coarse_mlp': True,
+            'use_fine_mlp': True,
+            'num_samples_coarse': 64,
             'num_samples_fine': 128,
-            'stop_grad': True,
-            'ray_shape': 'cylinder',
-            'resample_padding': 0.01,
             'chunk': 4*1024,
             'lindisp': False,
-            'points_positional_encoding_degree': 16,
+            'points_positional_encoding_degree': 10,
             'views_positional_encoding_degree': 4,
-            'disable_integration': False,
             'netchunk': 16*1024,
-            'netdepth': 8,
-            'netwidth': 256,
+            'netdepth_coarse': 8,
+            'netdepth_fine': 8,
+            'netwidth_coarse': 256,
+            'netwidth_fine': 256,
             'perturb': True,
             'raw_noise_std': 1.0,
-            'sigma_bias': -1,
             'use_view_dirs': True,
             'view_dependent_rgb': True,
-            'rgb_padding': 0.001,
             'white_bkgd': False,
         },
         'losses': [
             {
-                'name': 'MipNeRF_MSE01',
+                'name': 'NeRF_MSE01',
                 'weight': 1,
-                'weight_coarse': 0.1,
-                'weight_fine': 1,
             },
         ],
         'optimizer': {
-            'lr_decayer_name': 'MipNeRFLearningRateDecayer01',
-            'lr_initial': 5e-4,
-            'lr_final': 5e-6,
-            'lr_decay_steps': 2500,
-            'lr_decay_mult': 0.01,
+            'lr_decayer_name': 'NeRFLearningRateDecayer01',
+            'lr_initial': 0.0005,
+            'lr_decay': 250,
             'beta1': 0.9,
             'beta2': 0.999,
         },
@@ -563,107 +545,17 @@ def demo4():
     test_configs = {
         'Tester': f'{this_filename}/{Tester.this_filename}',
         'test_num': test_num,
-        'test_set_num': 14,
+        'test_set_num': 4,
         'train_num': train_num,
         'model_name': 'Model_Iter050000.tar',
-        'database_name': 'RealEstate10K',
-        'database_dirpath': 'RealEstate10K/Data',
+        'database_name': 'DTU',
+        'database_dirpath': 'DTU/Data',
         'device': 'gpu0',
     }
     start_training(train_configs)
     start_testing(test_configs)
-    # start_testing_videos(test_configs)
-    # start_testing_static_videos(test_configs)
-    return
-
-
-def demo5():
-    train_num = 105
-    test_num = 105
-
-    train_configs = {
-        'trainer': f'{this_filename}/{Trainer.this_filename}',
-        'train_num': train_num,
-        'database': 'RealEstate10K',
-        'database_dirpath': 'Databases/RealEstate10K/Data',
-        'data_loader': {
-            'data_loader_name': 'RealEstateDataLoader01',
-            'data_preprocessor_name': 'MipNeRFDataPreprocessor01',
-            'train_set_num': 15,
-            'scene_nums': [0, 1, 3, 4, 6],
-            'recenter_camera_poses': True,
-            'bd_factor': 0.75,
-            'spherify': False,
-            'ndc': True,
-            'batching': True,
-            'num_rays': 1024,
-            'precrop_fraction': 1,
-            'precrop_iterations': -1,
-        },
-        'model': {
-            'name': 'MipNeRF01',
-            'num_samples_coarse': 128,
-            'num_samples_fine': 128,
-            'stop_grad': True,
-            'ray_shape': 'cylinder',
-            'resample_padding': 0.01,
-            'chunk': 4*1024,
-            'lindisp': False,
-            'points_positional_encoding_degree': 16,
-            'views_positional_encoding_degree': 4,
-            'disable_integration': False,
-            'netchunk': 16*1024,
-            'netdepth': 8,
-            'netwidth': 256,
-            'perturb': True,
-            'raw_noise_std': 1.0,
-            'sigma_bias': -1,
-            'use_view_dirs': True,
-            'view_dependent_rgb': True,
-            'rgb_padding': 0.001,
-            'white_bkgd': False,
-        },
-        'losses': [
-            {
-                'name': 'MipNeRF_MSE01',
-                'weight': 1,
-                'weight_coarse': 0.1,
-                'weight_fine': 1,
-            },
-        ],
-        'optimizer': {
-            'lr_decayer_name': 'MipNeRFLearningRateDecayer01',
-            'lr_initial': 5e-4,
-            'lr_final': 5e-6,
-            'lr_decay_steps': 2500,
-            'lr_decay_mult': 0.01,
-            'beta1': 0.9,
-            'beta2': 0.999,
-        },
-        'resume_training': True,
-        'num_iterations': 50000,
-        'validation_interval': 500000,
-        'num_validation_iterations': 10,
-        'sample_save_interval': 500000,
-        'model_save_interval': 25000,
-        'mixed_precision_training': False,
-        'seed': numpy.random.randint(1000),
-        'device': 'gpu0',
-    }
-    test_configs = {
-        'Tester': f'{this_filename}/{Tester.this_filename}',
-        'test_num': test_num,
-        'test_set_num': 15,
-        'train_num': train_num,
-        'model_name': 'Model_Iter050000.tar',
-        'database_name': 'RealEstate10K',
-        'database_dirpath': 'RealEstate10K/Data',
-        'device': 'gpu0',
-    }
-    start_training(train_configs)
-    start_testing(test_configs)
-    # start_testing_videos(test_configs)
-    # start_testing_static_videos(test_configs)
+    start_testing_videos(test_configs)
+    start_testing_static_videos(test_configs)
     return
 
 
@@ -672,7 +564,6 @@ def main():
     demo2()
     demo3()
     demo4()
-    demo5()
     return
 
 
